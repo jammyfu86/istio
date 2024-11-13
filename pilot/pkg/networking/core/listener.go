@@ -601,6 +601,7 @@ func buildListenerFromEntry(builder *ListenerBuilder, le *outboundListenerEntry,
 		l.ListenerFilters = append(l.ListenerFilters, xdsfilters.HTTPInspector)
 		// Enable timeout only if they configure it and we have an HTTP inspector.
 		// This is really unsafe, so hopefully not used...
+		//l.ListenerFiltersTimeout = google_proto.Clone(builder.push.Mesh.ProtocolDetectionTimeout).(*durationpb.Duration)
 		l.ListenerFiltersTimeout = builder.push.Mesh.ProtocolDetectionTimeout
 	} else {
 		// Otherwise, do not have a timeout at all

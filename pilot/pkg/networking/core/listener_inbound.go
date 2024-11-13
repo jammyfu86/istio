@@ -312,6 +312,7 @@ func (lb *ListenerBuilder) buildInboundListener(name string, addresses []string,
 	accessLogBuilder.setListenerAccessLog(lb.push, lb.node, l, istionetworking.ListenerClassSidecarInbound)
 	l.FilterChains = chains
 	l.ListenerFilters = populateListenerFilters(lb.node, l, bindToPort)
+	//l.ListenerFiltersTimeout = google_proto.Clone(lb.push.Mesh.GetProtocolDetectionTimeout()).(*duration.Duration)
 	l.ListenerFiltersTimeout = lb.push.Mesh.GetProtocolDetectionTimeout()
 	return l
 }

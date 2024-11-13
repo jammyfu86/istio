@@ -3100,3 +3100,45 @@ func TestOutboundListenerConfig_WithAutoAllocatedAddress(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildListenerListenerFiltersTimeout(t *testing.T) {
+	services := []*model.Service{
+		{
+			CreationTime:   tnow,
+			Hostname:       host.Name("test.com"),
+			DefaultAddress: wildcardIPv4,
+			Ports: model.PortList{
+				&model.Port{
+					Name:     "https",
+					Port:     8080,
+					Protocol: protocol.HTTPS,
+				},
+			},
+			Resolution: model.Passthrough,
+			Attributes: model.ServiceAttributes{
+				Namespace: "default",
+			},
+		},
+	}
+	m := mesh.DefaultMeshConfig()
+	m.ProtocolDetectionTimeout = durationpb.New(10 * time.Second)
+	cg := NewConfigGenTest(t, TestOptions{
+		Services:       services,
+		ConfigPointers: []*config.Config{nil, nil},
+		MeshConfig:     m,
+	})
+	p := getProxy()
+	listeners := NewListenerBuilder(p, cg.env.PushContext()).buildSidecarOutboundListeners(cg.SetupProxy(p), cg.env.PushContext())
+	listener := xdstest.ExtractListener("0.0.0.0_8080", listeners)
+	if listener.ListenerFiltersTimeout == nil {
+		t.Fatalf("expected timeout disabled, found ContinueOnListenerFiltersTimeout %v, ListenerFiltersTimeout %v",
+			listener.ContinueOnListenerFiltersTimeout,
+			listener.ListenerFiltersTimeout)
+	}
+
+	listener.ListenerFiltersTimeout = durationpb.New(5 * time.Second)
+	push := cg.PushContext()
+	if push.Mesh.ProtocolDetectionTimeout.Seconds != 10 {
+		t.Errorf("Expected protocol detection timeout to be 10s, but got %v", push.Mesh.ProtocolDetectionTimeout)
+	}
+}
